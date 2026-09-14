@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: account-service
+  config:
+    import: configserver:${CONFIG_SERVER_URL:http://localhost:8888}
+
+stripe:
+  api:
+    secret: ${STRIPE_API_SECRET:sk_test_placeholder}
+  webhook:
+    secret: ${STRIPE_WEBHOOK_SECRET:whsec_placeholder}

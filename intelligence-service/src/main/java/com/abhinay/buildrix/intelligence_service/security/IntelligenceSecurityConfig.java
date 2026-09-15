@@ -25,7 +25,7 @@ public class IntelligenceSecurityConfig {
     private final HandlerExceptionResolver handlerExceptionResolver;
 
     private static final String[] PUBLIC_ROUTES = {
-            "/error", "/internal/**"
+            "/error", "/internal/**", "/actuator/**"
     };
 
     @Bean

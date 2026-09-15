@@ -6,6 +6,12 @@
         <option name="externalProjectPath" value="-DebugSession-" />
         <option name="runConfigurationId" value="Workspace Service" />
       </NativeProjectSettings>
+      <NativeProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$/account-service/src/main/java/com/abhinay/buildrix/account_service/AccountServiceApplication.java" />
+        <option name="qualifiedMainClassName" value="com.abhinay.buildrix.account_service.AccountServiceApplication" />
+        <option name="runConfigurationName" value="Account Service" />
+        <option name="runConfigurationType" value="APPLICATION" />
+      </NativeProjectSettings>
     </option>
   </component>
 </project>

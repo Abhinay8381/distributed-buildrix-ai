@@ -1,6 +1,7 @@
 package com.abhinay.buildrix.account_service.security;
 
 import com.abhinay.buildrix.common_lib.security.JwtAuthFilter;
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,7 +23,7 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 public class AccountSecurityConfig {
 
     private static final String[] PUBLIC_ROUTES = {
-            "/auth/**",  "/error", "/webhooks/**", "/internal/**"
+            "/auth/**",  "/error", "/webhooks/**", "/internal/**", "/actuator/**"
     };
 
     private final JwtAuthFilter jwtAuthFilter;
@@ -36,6 +37,8 @@ public class AccountSecurityConfig {
                 .authorizeHttpRequests(http ->
                         http
                                 .requestMatchers(PUBLIC_ROUTES).permitAll()
+                                .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
+                                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                                 .anyRequest().authenticated()
                         )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

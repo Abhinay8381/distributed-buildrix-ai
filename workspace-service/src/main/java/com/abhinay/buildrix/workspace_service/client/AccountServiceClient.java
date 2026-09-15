@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-@FeignClient(name = "account-service", path = "/account/internal/user")
+@FeignClient(name = "account-service", path = "/account/internal/user", url = "${ACCOUNT_SERVICE_URI:}")
 public interface AccountServiceClient {
 
     @GetMapping("/find-by-email")

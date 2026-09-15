@@ -1,6 +1,7 @@
 package com.abhinay.buildrix.workspace_service.security;
 
 import com.abhinay.buildrix.common_lib.security.JwtAuthFilter;
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,7 +26,7 @@ public class WorkspaceSecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
     private final HandlerExceptionResolver handlerExceptionResolver;
     private static final String[] PUBLIC_ROUTES = {
-            "/internal/**",  "/error",
+            "/internal/**",  "/error", "/actuator/**"
     };
 
     @Bean
@@ -36,6 +37,8 @@ public class WorkspaceSecurityConfig {
                 .authorizeHttpRequests(http ->
                         http
                                 .requestMatchers(PUBLIC_ROUTES).permitAll()
+                                .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
+                                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                                 .anyRequest().authenticated()
                         )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

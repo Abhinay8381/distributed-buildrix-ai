@@ -8,6 +8,7 @@ import io.fabric8.kubernetes.client.dsl.ExecListener;
 import io.fabric8.kubernetes.client.dsl.ExecWatch;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -24,31 +25,38 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
     private final KubernetesClient kubernetesClient;
     private final StringRedisTemplate stringRedisTemplate;
 
-    private static final String NAMESPACE = "buildrix-apps";
+    @Value("${app.preview.namespace}")
+    private String namespace;
+
+    @Value("${app.preview.domain}")
+    private String baseDomain;
+
+    @Value("${app.preview.proxy-port}")
+    private String proxyPort;
+
     private static final String POOL_LABEL = "status";
     private static final String PROJECT_LABEL = "project-id";
     private static final String IDLE = "idle";
     private static final String BUSY = "busy";
     private static final String SYNCER_CONTAINER = "syncer";
     private static final String RUNNER_CONTAINER = "runner";
-    private static final String REVERSE_PROXY_PORT = "8090";
 
     @Override
     public DeploymentResponse deploy(UUID projectId) {
-        String domain = "project-" + projectId + ".127.0.0.1.nip.io";
+        String domain = "project-" + projectId + baseDomain;
 
         Pod pod = findActivePod(projectId);
 
         if (pod != null) {
             registerRoute(pod, domain);
-            return new DeploymentResponse("http://" + domain + ":" + REVERSE_PROXY_PORT);
+            return new DeploymentResponse("http://" + domain + ":" + proxyPort);
         }
         return claimAndStartNewPod(projectId, domain);
     }
 
     private DeploymentResponse claimAndStartNewPod(UUID projectId, String domain) {
         Pod pod = kubernetesClient.pods()
-                .inNamespace(NAMESPACE)
+                .inNamespace(namespace)
                 .withLabel(POOL_LABEL, IDLE)
                 .list().getItems().stream()
                 .findFirst()
@@ -57,7 +65,7 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
         String podName = pod.getMetadata().getName();
         log.info("Claiming pod {} for project {}", podName, projectId);
 
-        kubernetesClient.pods().inNamespace(NAMESPACE)
+        kubernetesClient.pods().inNamespace(namespace)
                 .withName(podName)
                 .edit(p -> {
                     p.getMetadata().getLabels().put(POOL_LABEL, BUSY);
@@ -83,13 +91,13 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
             log.info("Starting dev server for project {}...", projectId);
             execCommand(podName, RUNNER_CONTAINER, "sh", "-c", startCmd);
 
-            log.info("Deployment successful: http://{}:{}", domain, REVERSE_PROXY_PORT);
+            log.info("Deployment successful: http://{}:{}", domain, proxyPort);
             registerRoute(pod, domain);
-            return new DeploymentResponse("http://" + domain + ":" + REVERSE_PROXY_PORT);
+            return new DeploymentResponse("http://" + domain + ":" + proxyPort);
 
         } catch (Exception e) {
             log.error("Deployment failed for project {}. Releasing pod {}.", projectId, podName, e);
-            kubernetesClient.pods().inNamespace(NAMESPACE).withName(podName).delete();
+            kubernetesClient.pods().inNamespace(namespace).withName(podName).delete();
             throw new RuntimeException(e);
         }
     }
@@ -98,7 +106,7 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
         log.debug("Exec in {}:{} -> {}", podName, container, String.join(" ", command));
 
         CompletableFuture<String> data = new CompletableFuture<>();
-        try (ExecWatch ignored = kubernetesClient.pods().inNamespace(NAMESPACE).withName(podName)
+        try (ExecWatch ignored = kubernetesClient.pods().inNamespace(namespace).withName(podName)
                 .inContainer(container)
                 .writingOutput(new ByteArrayOutputStream())
                 .writingError(new ByteArrayOutputStream())
@@ -125,7 +133,7 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
     }
 
     private Pod findActivePod(UUID projectId) {
-        return kubernetesClient.pods().inNamespace(NAMESPACE)
+        return kubernetesClient.pods().inNamespace(namespace)
                 .withLabel(PROJECT_LABEL, projectId.toString())
                 .withLabel(POOL_LABEL, BUSY)
                 .list().getItems().stream()
@@ -138,7 +146,7 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
         String podIp = (pod != null && pod.getStatus() != null) ? pod.getStatus().getPodIP() : null;
 
         if (podIp == null && pod != null) {
-            Pod fresh = kubernetesClient.pods().inNamespace(NAMESPACE).withName(pod.getMetadata().getName()).get();
+            Pod fresh = kubernetesClient.pods().inNamespace(namespace).withName(pod.getMetadata().getName()).get();
             if (fresh != null && fresh.getStatus() != null) {
                 podIp = fresh.getStatus().getPodIP();
             }

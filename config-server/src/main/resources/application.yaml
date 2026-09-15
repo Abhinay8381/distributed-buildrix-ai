@@ -5,8 +5,9 @@ spring:
     config.server.git:
       uri: https://github.com/Abhinay8381/buildrix-ai-config-server
       username: Abhinay8381
-      password: ${GITHUB_PAT:}
+      password: ${GIT_PASSWORD:}
       default-label: main
+
 
 server:
   port: 8888
@@ -16,5 +17,33 @@ eureka:
     hostname: localhost
     prefer-ip-address: true
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  health:
+    config:
+      enabled: false
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: k8s
+
+  cloud:
+    discovery:
+      enabled: false
+    config.server.git:
+      username: ${GIT_USERNAME}
+      password: ${GIT_PASSWORD}
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
 
 

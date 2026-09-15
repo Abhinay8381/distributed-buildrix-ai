@@ -1,0 +1,52 @@
+# k8s/proxy/proxy-deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: buildrix-proxy
+  namespace: buildrix-core
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: buildrix-proxy
+  template:
+    metadata:
+      labels:
+        app: buildrix-proxy
+    spec:
+      containers:
+        - name: buildrix-proxy
+          image: abhinayprajapati/buildrix-proxy-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "250m"
+              memory: "512Mi"
+          envFrom:
+            - configMapRef:
+                name: buildrix-shared-config
+          env:
+            - name: REDIS_HOST
+              value: "redis.buildrix-core.svc.cluster.local"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: PORT
+              value: "80"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: buildrix-proxy
+  namespace: buildrix-core
+spec:
+  selector:
+    app: buildrix-proxy
+  ports:
+    - port: 80
+      targetPort: 80

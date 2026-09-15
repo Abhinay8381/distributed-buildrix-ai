@@ -1,0 +1,17 @@
+server:
+  port: 80
+
+spring:
+  application:
+    name: proxy-service
+  threads:
+    virtual:
+      enabled: true
+  data:
+    redis:
+      host: ${REDIS_HOST:redis-service}
+      port: ${REDIS_PORT:6379}
+
+logging:
+  level:
+    com.abhinay.proxy_service: INFO
